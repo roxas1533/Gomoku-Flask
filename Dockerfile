@@ -15,3 +15,5 @@ RUN pip install --upgrade setuptools
 RUN pip install gunicorn
 RUN pip install numpy 
 RUN pip insatll onnxruntime
+RUN pip insatll Flask
+RUN pip install flask gunicorn
