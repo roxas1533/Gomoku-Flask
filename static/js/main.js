@@ -166,7 +166,7 @@ function softmax(logits) {
 }
 async function run() {
     // load model
-    const path = "/static/web_model/model.json";
+    const path = "/Gomoku-Flask/static/web_model/model.json";
     model = await tf.loadGraphModel(path);
     gameScene = 0;
 }
