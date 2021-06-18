@@ -9,7 +9,8 @@ let isThinking = false;
 let model;
 let mcts_player;
 const range = (min, max, step = 1) =>
-    Array.from({ length: ((max - 1) - min + step) / step }, (v, k) => min + k * step)
+    Array.from({length: ((max - 1) - min + step) / step}, (v, k) => min + k * step)
+
 class Board {
     constructor() {
         this.states = {};
@@ -18,6 +19,7 @@ class Board {
         this.turn = 0;
         this.current_player = -1;
     }
+
     init() {
         this.current_player = 1;
         this.availables = [...Array(11 * 11).keys()];
@@ -33,6 +35,7 @@ class Board {
         this.last_move = move
         this.turn++;
     }
+
     has_a_winner() {
         const width = 11
         const height = 11
@@ -42,7 +45,7 @@ class Board {
         const av = new Set(this.availables);
         const moved = new Set([...all].filter(e => (!av.has(e))))
         if (moved.size < n * 2 - 1)
-            return { win: false, winner: -1 };
+            return {win: false, winner: -1};
 
 
         for (let i = 0; i < moved.size; i++) {
@@ -50,23 +53,32 @@ class Board {
             let h = m / width | 0
             let w = m % width
             let player = states[String(m)]
-            if (w in [...Array(width - n + 1).keys()] && (new Set(range(m, m + n).map((i) => { return states[String(i)] }))).size == 1) {
-                return { win: true, winner: player };
+            if (w in [...Array(width - n + 1).keys()] && (new Set(range(m, m + n).map((i) => {
+                return states[String(i)]
+            }))).size == 1) {
+                return {win: true, winner: player};
             }
-            if (h in [...Array(height - n + 1).keys()] && (new Set(range(m, m + n * width, width).map((i) => { return states[String(i)] }))).size == 1)
-                return { win: true, winner: player };
+            if (h in [...Array(height - n + 1).keys()] && (new Set(range(m, m + n * width, width).map((i) => {
+                return states[String(i)]
+            }))).size == 1)
+                return {win: true, winner: player};
 
             if (range(0, width - n + 1).includes(w) && range(0, height - n + 1).includes(h) &&
-                (new Set(range(m, m + n * (width + 1), width + 1).map((i) => { return states[String(i)] }))).size == 1) {
-                return { win: true, winner: player };
+                (new Set(range(m, m + n * (width + 1), width + 1).map((i) => {
+                    return states[String(i)]
+                }))).size == 1) {
+                return {win: true, winner: player};
             }
             if (range(n - 1, width).includes(w) && range(0, height - n + 1).includes(h) &&
-                (new Set(range(m, m + n * (width - 1), width - 1).map((i) => { return states[String(i)] }))).size == 1)
-                return { win: true, winner: player };
+                (new Set(range(m, m + n * (width - 1), width - 1).map((i) => {
+                    return states[String(i)]
+                }))).size == 1)
+                return {win: true, winner: player};
         }
 
-        return { win: false, winner: -1 };
+        return {win: false, winner: -1};
     }
+
     current_state() {
         let square_state = Array.from(new Array(1), () => Array.from(new Array(4), () => {
             return Array.from(new Array(11), () => new Array(11).fill(0))
@@ -80,7 +92,7 @@ class Board {
                     move_curr.push(p);
                 else
                     move_oppo.push(p);
-            };
+            }
 
             move_curr.map(l => square_state[0][0][l / 11 | 0][l % 11] = 1.0)
             move_oppo.map(l => square_state[0][1][l / 11 | 0][l % 11] = 1.0)
@@ -92,16 +104,18 @@ class Board {
         }
         return square_state
     }
+
     game_end() {
-        let { win, winner } = this.has_a_winner()
+        let {win, winner} = this.has_a_winner()
         if (win)
-            return { win: true, winner: winner };
+            return {win: true, winner: winner};
         else if (!this.availables.size)
-            return { win: false, winner: -1 };
-        return { win: false, winner: -1 };
+            return {win: false, winner: -1};
+        return {win: false, winner: -1};
     }
 
 }
+
 class TreeNode {
     constructor(parent, prior_p) {
         this.parent = parent;
@@ -111,8 +125,9 @@ class TreeNode {
         this.u = 0;
         this.P = prior_p;
     }
+
     async expand(action_priors) {
-        let { action, prob } = action_priors;
+        let {action, prob} = action_priors;
         for (let i = 0; i < action.length; i++) {
             // console.log(action)
             if (!(action[i] in this.children)) {
@@ -120,6 +135,7 @@ class TreeNode {
             }
         }
     }
+
     select(c_puct) {
         let max = -Infinity;
         let returnKey = 0;
@@ -130,32 +146,38 @@ class TreeNode {
             }
 
         }
-        return { "action": returnKey, "node": this.children[returnKey] }
+        return {"action": returnKey, "node": this.children[returnKey]}
     }
+
     update(leaf_value) {
         this.n_visits += 1
         this.Q += 1.0 * (leaf_value - this.Q) / this.n_visits
 
     }
+
     update_recursive(leaf_value) {
         if (this.parent ?? false) {
             this.parent.update_recursive(-leaf_value)
         }
         this.update(leaf_value)
     }
+
     get_value(c_puct) {
         this.u = (c_puct * this.P * Math.sqrt(this.parent.n_visits) / (1 + this.n_visits))
 
         return this.Q + this.u
     }
+
     is_leaf() {
         return Object.keys(this.children).length == 0;
     }
+
     is_root() {
         return this.parent ?? false
     }
 
 }
+
 function softmax(logits) {
     const maxLogit = Math.max(...logits);
     const scores = logits.map(l => Math.exp(l - maxLogit));
@@ -164,13 +186,15 @@ function softmax(logits) {
     const re = scores.map(s => s / denom);
     return re;
 }
+
 async function run() {
     // load model
-    // const path = "/Gomoku-Flask/static/web_model/model.json";
-    const path = "/static/web_model/model.json";
+    const path = "/Gomoku-Flask/static/web_model/model.json";
+    // const path = "/static/web_model/model.json";
     model = await tf.loadGraphModel(path);
     gameScene = 0;
 }
+
 async function predict(board) {
     // predict
     const xs = tf.tensor4d(board);
@@ -179,17 +203,18 @@ async function predict(board) {
     const valuesTns = await y_pred[1].data();
     const value = Array.from(valuesTns);
     const policy = Array.from(policyTns);
-    return { policy, value }
+    return {policy, value}
 }
+
 async function policy_value_fn(board) {
     let legal_positions = board.availables
     let current_state = board.current_state()
-    let { policy, value } = await predict(current_state)
+    let {policy, value} = await predict(current_state)
     let act_probs = policy.flat().map(p => Math.exp(p));
 
-    act_probs = { "action": legal_positions, "prob": legal_positions.map(l => act_probs[l]) }
+    act_probs = {"action": legal_positions, "prob": legal_positions.map(l => act_probs[l])}
     value = value[0]
-    return { "action_probs": act_probs, "leaf_value": value }
+    return {"action_probs": act_probs, "leaf_value": value}
 }
 
 class MCTS {
@@ -199,18 +224,19 @@ class MCTS {
         this._c_puct = c_puct
         this._n_playout = n_playout
     }
+
     async _playout(state) {
         var node = this._root
         while (true) {
 
             if (node.is_leaf())
                 break
-            var { action, node } = node.select(this._c_puct)
+            var {action, node} = node.select(this._c_puct)
             // sum(10, 8n);
             state.do_move(action)
         }
-        let { action_probs, leaf_value } = await this._policy(state)
-        let { win, winner } = state.game_end()
+        let {action_probs, leaf_value} = await this._policy(state)
+        let {win, winner} = state.game_end()
 
         if (!win)
             await node.expand(action_probs)
@@ -222,6 +248,7 @@ class MCTS {
         }
         node.update_recursive(-leaf_value)
     }
+
     async get_move_probs(state, temp = 1e-3) {
         for (let n = 0; n < this._n_playout; n++) {
             let state_copy = copy(state)
@@ -234,8 +261,9 @@ class MCTS {
             visits.push(value.n_visits);
         }
         let act_probs = softmax(visits.map(l => l + 1e-10).map(p => Math.log(p)).map(logged => logged * (1.0 / 1e-3)))
-        return { acts, act_probs }
+        return {acts, act_probs}
     }
+
     update_with_move(last_move) {
         if (last_move in this._root.children) {
             this._root = this._root.children[last_move];
@@ -245,27 +273,32 @@ class MCTS {
     }
 
 }
+
 function randomChoice(p) {
     let rnd = p.reduce((a, b) => a + b) * Math.random();
     return p.findIndex(a => (rnd -= a) < 0);
     // return p.indexOf(Math.max(...p))
 }
+
 class MCTSPlayer {
     constructor(policy_value_function, c_puct, n_playout) {
         this.mcts = new MCTS(policy_value_function, c_puct, n_playout)
     }
+
     set_player_ind(p) {
         this.player = p
     }
+
     reset_player(self) {
         this.mcts.update_with_move(-1)
     }
+
     async get_action(board, temp = 1e-3) {
         let sensible_moves = board.availables
 
         let move_probs = [...Array(11 * 11).keys()]
         if (sensible_moves.length > 0) {
-            let { "acts": acts, "act_probs": probs } = await this.mcts.get_move_probs(board, temp)
+            let {"acts": acts, "act_probs": probs} = await this.mcts.get_move_probs(board, temp)
             move_probs.map(m => probs)
             for (let i = 0; i < acts.size; i++) {
                 move_probs[acts[i]] = probs;
@@ -286,15 +319,16 @@ function copy(board) {
     newBoard.last_move = board.last_move;
     newBoard.turn = board.turn;
     newBoard.current_player = board.current_player;
-    newBoard.states = ([board.states].map(list => ({ ...list })))[0]
+    newBoard.states = ([board.states].map(list => ({...list})))[0]
     newBoard.availables = JSON.parse(JSON.stringify(board.availables))
     return newBoard;
 }
+
 async function get_action(mcts_player, board) {
     const move = await mcts_player.get_action(board);
     board.do_move(move);
     isThinking = false;
-    var { win: end, winner } = board.game_end();
+    var {win: end, winner} = board.game_end();
     if (end) {
         gameScene = 2;
     }
@@ -317,7 +351,7 @@ window.onload = function () {
                     if (mouseX > (i) * 50 && mouseX < (i + 1) * 50 && mouseY > (j) * 50 && mouseY < (j + 1) * 50) {
                         if (board.availables.indexOf(j * 11 + i) >= 0) {
                             board.do_move(j * 11 + i);
-                            var { win: end, winner } = board.game_end();
+                            var {win: end, winner} = board.game_end();
 
                             if (end) {
                                 gameScene = 2;
@@ -385,6 +419,7 @@ class ClickButton {
         this.height = m.actualBoundingBoxAscent + m.actualBoundingBoxDescent
         this.isMouseOver = false;
     }
+
     draw() {
         if (mouseX > 550 / 2 - 100 && mouseX < 550 / 2 + 100 && mouseY > 550 / 2 - 35 && 550 / 2 + 35 > mouseY) {
             ctx.fillStyle = '#FFFFFF55';
@@ -414,8 +449,7 @@ function render() {
             const m = ctx.measureText("loading...");
             ctx.fillText("loading...", 550 / 2 - m.width / 2, 550 / 2);
 
-        }
-        else if (gameScene == 0) {
+        } else if (gameScene == 0) {
             ctx.fillStyle = '#307bf2';
             ctx.fillRect(0, 0, 550, 550);
             ctx.strokeStyle = 'black';
@@ -449,8 +483,7 @@ function render() {
                         ctx.arc((i) * 50 + 25, (j) * 50 + 25, 15, 0, 2 * Math.PI);
                         ctx.stroke();
                         ctx.lineWidth = 1;
-                    }
-                    else if (p == 2) {
+                    } else if (p == 2) {
                         ctx.strokeStyle = '#5D5D5D';
                         ctx.lineWidth = 2;
                         ctx.beginPath();
@@ -474,7 +507,8 @@ function render() {
                 ctx.moveTo(0, (i + 1) * 50);
                 ctx.lineTo(550, (i + 1) * 50);
                 ctx.stroke();
-            };
+            }
+            ;
             if (isThinking) {
                 ctx.fillStyle = '#00000044';
                 ctx.fillRect(0, 0, 550, 550);
