@@ -55,12 +55,12 @@ class Board {
             }
             if (h in [...Array(height - n + 1).keys()] && (new Set(range(m, m + n * width, width).map((i) => { return states[String(i)] }))).size == 1)
                 return { win: true, winner: player };
-            if (w in range(0, width - n + 1) && h in range(0, height - n + 1) &&
+
+            if (range(0, width - n + 1).includes(w) && range(0, height - n + 1).includes(h) &&
                 (new Set(range(m, m + n * (width + 1), width + 1).map((i) => { return states[String(i)] }))).size == 1) {
                 return { win: true, winner: player };
             }
-
-            if (w in range(0, n - 1, width) && h in range(0, height - n + 1) &&
+            if (range(n - 1, width).includes(w) && range(0, height - n + 1).includes(h) &&
                 (new Set(range(m, m + n * (width - 1), width - 1).map((i) => { return states[String(i)] }))).size == 1)
                 return { win: true, winner: player };
         }
@@ -72,8 +72,6 @@ class Board {
             return Array.from(new Array(11), () => new Array(11).fill(0))
         }));
         if (this.states) {
-            let moves = [];
-            let players = [];
             let move_curr = [];
             let move_oppo = [];
 
@@ -83,6 +81,7 @@ class Board {
                 else
                     move_oppo.push(p);
             };
+
             move_curr.map(l => square_state[0][0][l / 11 | 0][l % 11] = 1.0)
             move_oppo.map(l => square_state[0][1][l / 11 | 0][l % 11] = 1.0)
 
@@ -114,7 +113,8 @@ class TreeNode {
     }
     async expand(action_priors) {
         let { action, prob } = action_priors;
-        for (let i = 0; i < Object.keys(action).length; i++) {
+        for (let i = 0; i < action.length; i++) {
+            // console.log(action)
             if (!(action[i] in this.children)) {
                 this.children[action[i]] = new TreeNode(this, prob[i]);
             }
@@ -122,15 +122,15 @@ class TreeNode {
     }
     select(c_puct) {
         let max = -Infinity;
-        let maxV;
+        let returnKey = 0;
         for (let [key, value] of Object.entries(this.children)) {
             if (max < value.get_value(c_puct)) {
                 max = value.get_value(c_puct);
-                maxV = value;
+                returnKey = key;
             }
 
         }
-        return { "action": max, "node": maxV }
+        return { "action": returnKey, "node": this.children[returnKey] }
     }
     update(leaf_value) {
         this.n_visits += 1
@@ -166,7 +166,8 @@ function softmax(logits) {
 }
 async function run() {
     // load model
-    const path = "/Gomoku-Flask/static/web_model/model.json";
+    // const path = "/Gomoku-Flask/static/web_model/model.json";
+    const path = "/static/web_model/model.json";
     model = await tf.loadGraphModel(path);
     gameScene = 0;
 }
@@ -205,6 +206,7 @@ class MCTS {
             if (node.is_leaf())
                 break
             var { action, node } = node.select(this._c_puct)
+            // sum(10, 8n);
             state.do_move(action)
         }
         let { action_probs, leaf_value } = await this._policy(state)
@@ -433,6 +435,12 @@ function render() {
                         }
                     }
                     loc = j * 11 + i
+                    // ctx.fillStyle = "#000000"
+                    // ctx.font = "15px Meiryo";
+
+                    // ctx.fillText("" + loc, i * 50, (j + 1) * 50);
+                    // ctx.font = "48px Meiryo";
+
                     p = board.states[String(loc)]
                     if (p == 1) {
                         ctx.strokeStyle = '#FFFFFF';

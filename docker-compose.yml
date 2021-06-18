@@ -3,8 +3,10 @@ services:
   python3:
     restart: always
     build: .
-    container_name: 'python3'
+    container_name: 'predict'
     working_dir: '/root/'
     tty: true
+    ports:
+      - "8000:8000"
     volumes:
       - ./:/root/opt
